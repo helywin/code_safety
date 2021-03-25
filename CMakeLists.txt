@@ -34,11 +34,13 @@ target_compile_definitions(test_coredump PRIVATE -DWITHOUT_BREAKPAD)
 add_executable(test_server test_breakpad_server.cpp func.cpp func.hpp)
 target_link_libraries(test_server ${BREAKPAD_CLIENT_LIBRARIES})
 
-add_executable(test_memory test_memory.cpp)
-set_target_properties(test_memory PROPERTIES
+add_executable(test_memory_asan test_memory.cpp)
+set_target_properties(test_memory_asan PROPERTIES
         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fsanitize-recover=address"
         LINK_FLAGS "-fsanitize=address -static-libasan"
         )
+
+add_executable(test_memory test_memory.cpp)
 
 
 #add_custom_command()
