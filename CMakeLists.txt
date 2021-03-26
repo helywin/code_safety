@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(code_security LANGUAGES CXX)
+enable_testing()
 
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_C_COMPILER gcc)
@@ -8,8 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message("Debug编译")
-    set(CMAKE_CXX_FLAGS "-pipe -pthread -g -ggdb -std=gnu++11 -Wall -D_REENTRANT -fPIC")
-    set(CMAKE_C_FLAGS "-pipe -g -ggdb -Wall -D_REENTRANT -fPIC")
+    set(CMAKE_CXX_FLAGS "-pipe -O0 -g -ggdb -std=gnu++11 -Wall -D_REENTRANT -fPIC")
+    set(CMAKE_C_FLAGS "-pipe -O0 -g -ggdb -Wall -D_REENTRANT -fPIC")
 else () #CMAKE_BUILD_TYPE MATCHES Release
     message("Release编译")
     set(CMAKE_CXX_FLAGS "-pipe -O2 -std=gnu++11 -Wall -W -D_REENTRANT -fPIC")
@@ -20,7 +21,7 @@ include(FindPkgConfig)
 pkg_check_modules(BREAKPAD_CLIENT REQUIRED breakpad-client)
 message(STATUS "breakpad_client目录 ${BREAKPAD_CLIENT_INCLUDE_DIRS}")
 include_directories(${BREAKPAD_CLIENT_INCLUDE_DIRS})
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/output)
+#set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/output)
 
 # 查找clang-tidy
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy-12" DOC "Path to clang-tidy executable")
@@ -61,7 +62,14 @@ endif ()
 add_executable(test_gcov test_gcov.cpp)
 set_target_properties(test_gcov PROPERTIES
         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage"
-        LINK_FLAGS "-fprofile-arcs -ftest-coverage"
+        )
+target_link_libraries(test_gcov gcov)
+
+get_target_property(dir test_gcov BINARY_DIR)
+message(build at ${dir})
+
+add_custom_target(run_test_gcov COMMAND
+        ${CMAKE_SOURCE_DIR}/make_cov.sh ${dir}/CMakeFiles/test_gcov.dir
         )
 
 

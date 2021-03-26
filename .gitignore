@@ -33,6 +33,7 @@
 *.out
 *.app
 
+build/
 output/
 cmake-build-*/
 coverage*
