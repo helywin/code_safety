@@ -58,6 +58,11 @@ if (CLANG_TIDY_EXE)
     set_target_properties(test_clang_tidy PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif ()
 
+add_executable(test_gcov test_gcov.cpp)
+set_target_properties(test_gcov PROPERTIES
+        COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage"
+        LINK_FLAGS "-fprofile-arcs -ftest-coverage"
+        )
 
 
 #add_custom_command()
