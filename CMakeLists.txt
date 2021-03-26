@@ -22,6 +22,15 @@ message(STATUS "breakpad_client目录 ${BREAKPAD_CLIENT_INCLUDE_DIRS}")
 include_directories(${BREAKPAD_CLIENT_INCLUDE_DIRS})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/output)
 
+# 查找clang-tidy
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-12" DOC "Path to clang-tidy executable")
+if (NOT CLANG_TIDY_EXE)
+    message(STATUS "clang-tidy not found.")
+else ()
+    message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks=*,-clang-analyzer-alpha.*")
+endif ()
+
 add_executable(test_breakpad test_breakpad.cpp func.cpp func.hpp)
 target_link_libraries(test_breakpad
         ${BREAKPAD_CLIENT_LIBRARIES}
@@ -33,7 +42,6 @@ target_compile_definitions(test_coredump PRIVATE -DWITHOUT_BREAKPAD)
 
 add_executable(test_server test_breakpad_server.cpp func.cpp func.hpp)
 target_link_libraries(test_server ${BREAKPAD_CLIENT_LIBRARIES})
-
 add_executable(test_memory_asan test_memory.cpp)
 set_target_properties(test_memory_asan PROPERTIES
         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fsanitize-recover=address"
@@ -41,6 +49,15 @@ set_target_properties(test_memory_asan PROPERTIES
         )
 
 add_executable(test_memory test_memory.cpp)
+
+add_executable(test_clang_tidy test_breakpad.cpp func.cpp func.hpp)
+target_link_libraries(test_clang_tidy
+        ${BREAKPAD_CLIENT_LIBRARIES}
+        pthread)
+if (CLANG_TIDY_EXE)
+    set_target_properties(test_clang_tidy PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+endif ()
+
 
 
 #add_custom_command()
