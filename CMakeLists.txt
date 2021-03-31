@@ -7,6 +7,10 @@ set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif ()
+
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message("Debug编译")
     set(CMAKE_CXX_FLAGS "-pipe -O0 -g -ggdb -std=gnu++11 -Wall -D_REENTRANT -fPIC")
@@ -37,19 +41,15 @@ target_link_libraries(test_breakpad
         ${BREAKPAD_CLIENT_LIBRARIES}
         pthread)
 
-add_executable(test_coredump test_breakpad.cpp func.cpp func.hpp)
-target_link_libraries(test_coredump pthread ${BREAKPAD_CLIENT_LIBRARIES})
-target_compile_definitions(test_coredump PRIVATE -DWITHOUT_BREAKPAD)
-
 add_executable(test_server test_breakpad_server.cpp func.cpp func.hpp)
-target_link_libraries(test_server ${BREAKPAD_CLIENT_LIBRARIES})
+target_link_libraries(test_server ${BREAKPAD_CLIENT_LIBRARIES} pthread)
 add_executable(test_memory_asan test_memory.cpp)
 set_target_properties(test_memory_asan PROPERTIES
         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fsanitize-recover=address"
         LINK_FLAGS "-fsanitize=address -static-libasan"
         )
 
-add_executable(test_memory test_memory.cpp)
+add_executable(test_memory_none test_memory.cpp)
 
 add_executable(test_clang_tidy test_breakpad.cpp func.cpp func.hpp)
 target_link_libraries(test_clang_tidy
@@ -72,5 +72,18 @@ add_custom_target(run_test_gcov COMMAND
         ${CMAKE_SOURCE_DIR}/make_cov.sh ${dir}/CMakeFiles/test_gcov.dir
         )
 
+add_executable(test_race_none test_race.cpp)
+target_link_libraries(test_race_none pthread)
+
+add_custom_target(test_race COMMAND
+        clang-12 -lstdc++ -pthread -fsanitize=thread -g -O0 ${CMAKE_SOURCE_DIR}/test_race.cpp -o ${CMAKE_BINARY_DIR}/test_race
+        )
+
+add_custom_target(test_memory COMMAND
+        clang-12 -lstdc++ -fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins -fsanitize-memory-use-after-dtor -g -O0 ${CMAKE_SOURCE_DIR}/test_memory.cpp -o ${CMAKE_BINARY_DIR}/test_memory
+        )
+
+add_executable(test_gperf test_gperf.cpp)
+target_link_libraries(test_gperf tcmalloc profiler)
 
 #add_custom_command()

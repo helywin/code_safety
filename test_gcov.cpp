@@ -21,4 +21,8 @@ int main(int argc, char *argv[])
     } else {
         func2();
     }
+    int a = 2;
+    if (a = 3) {
+        a = 4;
+    }
 }

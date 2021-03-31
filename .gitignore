@@ -37,3 +37,4 @@ build/
 output/
 cmake-build-*/
 coverage*
+cppcheck-build-dir/
