@@ -51,6 +51,9 @@ plog-converter -a GA:1,2 -t tasklist -o result.txt analyse.log #转文字报告
 
 最终`result.txt`里面的内容
 
+<details>
+  <summary>结果</summary>
+
 ```
  www.viva64.com/en/w>1>  err>Help: The documentation for all analyzer warnings is available here: https://www.viva64.com/en/w/.
     1 /home/jiang/code/code_security/func.cpp>28> err>V675 Calling the 'strcpy' function will cause the writing into the read-only memory. Inspect the first argument.
@@ -69,6 +72,7 @@ plog-converter -a GA:1,2 -t tasklist -o result.txt analyse.log #转文字报告
 
 ```
 
+</details>
 
 ### clang-tidy
 
@@ -450,7 +454,12 @@ http://cppcheck.net/manual.pdf
 
 使用cppcheck检测得到的截图
 
+<details>
+  <summary>结果</summary>
+
 ![2021-04-06_13-52](./assets/2021-04-06_13-52.png)
+
+</details>
 
 从结果看到cppcheck检测出来的内存问题相对来说比较少，检测能力有限
 
@@ -1641,6 +1650,14 @@ valgrind --tool=dhat prog
 
 ## 性能分析
 
+linux performance主页：
+
+http://www.brendangregg.com/linuxperf.html
+
+linux下面的性能分析工具图
+
+![图](http://www.brendangregg.com/Perf/linux_observability_tools.png)
+
 ### gperftools
 
 最快的内存分配（tcmalloc），同时提供线程友好的堆检测，堆探查，CPU探查
@@ -1702,11 +1719,11 @@ pprof ./a.out /tmp/heapprof.0045.heap
 
 如果用代码则为`ProfilerStart("文件名");`和`ProfilerStop();`
 
+<mark>对于非编译时链接的可执行文件，可以采用设置LD_PRELOAD变量预加载动态库实现调试</mark>
 
+### perf
 
-==对于非编译时链接的可执行文件，可以采用设置LD_PRELOAD变量预加载动态库实现调试==
-
-### 内核工具
+文档页面：http://www.brendangregg.com/perf.html
 
 在命令行输入perf，按照提示安装包
 
@@ -1718,10 +1735,30 @@ sudo perf top -p PID
 
 PID可以用`$(pidof name)`来查找
 
+例如对界面程序查看性能
+
+<details>
+  <summary>结果</summary>
+
+![perf top](./assets/2021-04-06_15-47.png)
+
+</details>
+
+通过查看symbols中占用多的函数可以有针对性的对程序进行优化
+
 #### 记录到文件
 
 ```bash
 sudo perf record -e cpu-clock -g -p PID -o FILE_NAME
+```
+
+例如
+
+```bash
+sudo perf record -e cpu-clock -g -p $(pidof garbage_ui) -o garbage_ui.perf
+[sudo] password for jiang: 
+^C[ perf record: Woken up 39 times to write data ]
+[ perf record: Captured and wrote 8.577 MB garbage_ui.perf (111310 samples) ]
 ```
 
 #### 查看记录结果
@@ -1736,13 +1773,58 @@ sudo perf report -i FILE_NAME
 sudo perf script -i FILE_NAME > OUTPUT
 ```
 
+文本结果除非指定了采集一小段时间，不然导出来没法阅读，需要用可视化工具进行分析
+
 #### 绘制火焰图
 
-https://github.com/brendangregg/FlameGraph
+有关火焰图的内容：http://www.brendangregg.com/flamegraphs.html
+
+绘制火焰图程序：https://github.com/brendangregg/FlameGraph
 
 图样式：
 
-！[flamechart](http://www.brendangregg.com/FlameGraphs/cpu-bash-flamegraph.svg)
+![flamechart](http://www.brendangregg.com/FlameGraphs/cpu-bash-flamegraph.svg)
+
+实际示例：
+
+```bash
+sudo perf record -a -g -F 99 -e cpu-clock -p $(pidof garbage_ui) --user-callchains
+sudo chown jiang:jiang perf.data
+perf script | ../FlameGraph/stackcollapse-perf.pl > garbage_ui.perf-folded
+../FlameGraph/flamegraph.pl garbage_ui.perf-folded > assets/garbage_ui.svg
+```
+
+加入`--user-callchains`是为了去掉过高的unknown方法
+
+最后的图像：
+
+![garbage_ui_flame](assets/garbage_ui.svg)
+
+通过把svg图像嵌入HTML中可以进行交互显示，参考[flamechart.html](flamechart.html)
+
+```html
+<object class="p" data="./assets/garbage_ui.svg" type="image/svg+xml" width="900" height="914"></object>
+```
+
+<object class="p" data="./assets/garbage_ui.svg" type="image/svg+xml" width="900" height="914"></object>
+
+### perf-tools
+
+项目地址：https://github.com/brendangregg/perf-tools
+
+![perf-tools](https://raw.githubusercontent.com/brendangregg/perf-tools/master/images/perf-tools_2016.png)
+
+### bpftrace
+
+项目地址：https://github.com/iovisor/bpftrace
+
+![bpftrace结构](https://raw.githubusercontent.com/iovisor/bpftrace/master/images/bpftrace_probes_2018.png)
+
+### bcc
+
+项目地址：https://github.com/iovisor/bcc
+
+![structure](https://raw.githubusercontent.com/iovisor/bcc/master/images/bcc_tracing_tools_2019.png)
 
 ## 栈回溯
 
@@ -1899,3 +1981,5 @@ int main(int argc, char *argv[])
 > https://zhuanlan.zhihu.com/p/302726082
 >
 > https://zhuanlan.zhihu.com/p/290689333
+>
+> http://www.brendangregg.com/

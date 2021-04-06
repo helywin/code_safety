@@ -38,3 +38,5 @@ output/
 cmake-build-*/
 coverage*
 cppcheck-build-dir/
+garbage_ui.perf-folded
+perf.data*
