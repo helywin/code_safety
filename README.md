@@ -1,26 +1,10 @@
----
-presentation:
-  theme: solarized.css
-  mouseWheel: true
-  width: 1000
-  height: 900
----
-
-<!-- slide -->
-
 # 代码检测工具
 
-<!-- slide -->
-
 ## 静态检测
-
-<!-- slide -->
 
 https://en.wikipedia.org/wiki/List_of_tools_for_static_code_analysis#C,_C++
 
 ![所有工具](assets/2021-03-30_15-13.png)
-
-<!-- slide -->
 
 ### pvs-studio
 
@@ -43,7 +27,7 @@ UX9G-38X9-1HNH-0B0F
 pvs-studio-analyzer credentials Ru.Board UX9G-38X9-1HNH-0B0F
 ```
 
-操作：
+示例操作：
 
 ```bash
 # 根据构建脚本编译的源文件生成跟踪，自动抓取需要分析的源文件，会自动生成analyse.log文件
@@ -54,7 +38,36 @@ pvs-studio-analyzer analyze -j4 -o analyse.log
 plog-converter -a GA:1,2 -t tasklist -o result.txt analyse.log
 ```
 
-<!-- slide -->
+使用上述命令分析仓库中`test_memory_none`目标
+
+```bash
+mkdir build
+cd build
+cmake ..
+pvs-studio-analyzer trace -- make test_memory_none  #该命令会自动生成一个strace_out文件记录着编译用到的文件
+pvs-studio-analyzer analyze -j4 -o analyse.log #生成结果
+plog-converter -a GA:1,2 -t tasklist -o result.txt analyse.log #转文字报告
+```
+
+最终`result.txt`里面的内容
+
+```
+ www.viva64.com/en/w>1>  err>Help: The documentation for all analyzer warnings is available here: https://www.viva64.com/en/w/.
+    1 /home/jiang/code/code_security/func.cpp>28> err>V675 Calling the 'strcpy' function will cause the writing into the read-only memory. Inspect the first argument.
+    2 /home/jiang/code/code_security/func.cpp>48> err>V774 The 'str' pointer was used after the memory was released.
+    3 /home/jiang/code/code_security/func.cpp>54> err>V557 Array overrun is possible. The '100' index is pointing beyond array bound.
+    4 /home/jiang/code/code_security/test_gcov.cpp>   25> warn>   V547 Expression 'a = 3' is always true.
+    5 /home/jiang/code/code_security/test_gcov.cpp>   25> warn>   V559 Suspicious assignment inside the conditional expression of 'if' statement: a = 3.
+    6 /home/jiang/code/code_security/test_gperf.cpp>  19> warn>   V799 The 'p' variable is not used after memory has been allocated for it. Consider checking the use of this variable.
+    7 /home/jiang/code/code_security/test_gperf.cpp>  43> err>V530 The return value of function 'create' is required to be utilized.
+    8 /home/jiang/code/code_security/test_memory.cpp> 50> err>V512 A call of the 'memcpy' function will lead to the '"dddddd"' buffer becoming out of range.
+    9 /home/jiang/code/code_security/test_memory.cpp> 52> warn>   V557 Array overrun is possible. The value of 'i' index could reach 24.
+   10 /home/jiang/code/code_security/test_memory.cpp> 56> err>V774 The 'buff' pointer was used after the memory was released.
+   11 /home/jiang/code/code_security/test_memory.cpp> 57> warn>   V799 The 'buggy' variable is not used after memory has been allocated for it. Consider checking the use of this variable.
+   12 /home/jiang/code/code_security/test_memory.cpp> 59> warn>   V799 The 'normal' variable is not used after memory has been allocated for it. Consider checking the use of this variable.
+   13 /home/jiang/code/code_security/test_memory.cpp> 67> err>V614 Uninitialized variable 'global' used.
+
+```
 
 
 ### clang-tidy
@@ -106,6 +119,302 @@ https://clang.llvm.org/extra/clang-tidy/#id2
 
 https://clang.llvm.org/extra/clang-tidy/checks/list.html
 
+示例：
+
+直接用命令编译仓库中的`test_clang_tidy`目标，得到命令行结果
+
+<details>
+  <summary>结果</summary>
+
+```
+❯ make test_clang_tidy
+Scanning dependencies of target test_clang_tidy
+[ 33%] Building CXX object CMakeFiles/test_clang_tidy.dir/test_breakpad.cpp.o
+/home/jiang/code/code_security/test_breakpad.cpp:6:1: warning: #includes are not sorted properly [llvm-include-order]
+#include <breakpad/client/linux/handler/exception_handler.h>
+^
+note: this fix will not be applied because it overlaps with another fix
+/home/jiang/code/code_security/test_breakpad.cpp:6:1: warning: system include breakpad/client/linux/handler/exception_handler.h not allowed [llvmlibc-restrict-system-libc-headers]
+#include <breakpad/client/linux/handler/exception_handler.h>
+^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/jiang/code/code_security/test_breakpad.cpp:7:1: warning: system include breakpad/client/linux/crash_generation/crash_generation_server.h not allowed [llvmlibc-restrict-system-libc-headers]
+#include <breakpad/client/linux/crash_generation/crash_generation_server.h>
+^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/jiang/code/code_security/test_breakpad.cpp:9:1: warning: system include iostream not allowed [llvmlibc-restrict-system-libc-headers]
+#include <iostream>
+^~~~~~~~~~~~~~~~~~~
+/home/jiang/code/code_security/test_breakpad.cpp:11:1: warning: do not use namespace using-directives; use using-declarations instead [google-build-using-namespace]
+using namespace google_breakpad;
+^
+/home/jiang/code/code_security/test_breakpad.cpp:11:17: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+using namespace google_breakpad;
+                ^
+/home/jiang/code/code_security/test_breakpad.cpp:13:13: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+static bool dumpCallback(const MinidumpDescriptor &descriptor,
+            ^
+/home/jiang/code/code_security/test_breakpad.cpp:13:13: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+static bool dumpCallback(const MinidumpDescriptor &descriptor,
+       ~~~~ ^
+       auto
+/home/jiang/code/code_security/test_breakpad.cpp:14:32: warning: parameter 'context' is unused [misc-unused-parameters]
+                         void *context, bool succeeded)
+                               ^~~~~~~
+                                /*context*/
+/home/jiang/code/code_security/test_breakpad.cpp:16:5: warning: do not call c-style vararg functions [cppcoreguidelines-pro-type-vararg,hicpp-vararg]
+    printf("dump存放位置: %s\n", descriptor.path());
+    ^
+/home/jiang/code/code_security/test_breakpad.cpp:20:5: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+int main(int argc, char *argv[])
+    ^
+/home/jiang/code/code_security/test_breakpad.cpp:20:5: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+int main(int argc, char *argv[])
+~~~ ^
+auto                             -> int
+/home/jiang/code/code_security/test_breakpad.cpp:26:21: warning: narrowing conversion from 'long' to signed type 'int' is implementation-defined [bugprone-narrowing-conversions,cppcoreguidelines-narrowing-conversions]
+        client_fd = strtol(argv[1], nullptr, 10);
+                    ^
+/home/jiang/code/code_security/test_breakpad.cpp:26:28: warning: do not use pointer arithmetic [cppcoreguidelines-pro-bounds-pointer-arithmetic]
+        client_fd = strtol(argv[1], nullptr, 10);
+                           ^
+/home/jiang/code/code_security/test_breakpad.cpp:26:46: warning: 10 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+        client_fd = strtol(argv[1], nullptr, 10);
+                                             ^
+/home/jiang/code/code_security/test_breakpad.cpp:29:19: warning: narrowing conversion from 'long' to signed type 'int' is implementation-defined [bugprone-narrowing-conversions,cppcoreguidelines-narrowing-conversions]
+        funcNum = strtol(argv[2], nullptr, 10);
+                  ^
+/home/jiang/code/code_security/test_breakpad.cpp:29:26: warning: do not use pointer arithmetic [cppcoreguidelines-pro-bounds-pointer-arithmetic]
+        funcNum = strtol(argv[2], nullptr, 10);
+                         ^
+/home/jiang/code/code_security/test_breakpad.cpp:29:44: warning: 10 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+        funcNum = strtol(argv[2], nullptr, 10);
+                                           ^
+/home/jiang/code/code_security/test_breakpad.cpp:31:35: warning: calling a function that uses a default argument is disallowed [fuchsia-default-arguments-calls]
+    MinidumpDescriptor descriptor("./");
+                                  ^
+/usr/lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/bits/basic_string.h:509:39: note: default parameter was declared here
+      basic_string(const _CharT* __s, const _Alloc& __a = _Alloc())
+                                      ^
+/home/jiang/code/code_security/test_breakpad.cpp:32:46: warning: 'dumpCallback' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+    ExceptionHandler eh(descriptor, nullptr, dumpCallback, nullptr, true,
+                                             ^
+/home/jiang/code/code_security/test_breakpad.cpp:13:13: note: resolves to this declaration
+static bool dumpCallback(const MinidumpDescriptor &descriptor,
+            ^
+/home/jiang/code/code_security/test_breakpad.cpp:36:19: warning: 'operator<<<std::char_traits<char>>' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+        std::cout << "选择函数:\n"
+                  ^
+/usr/lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/ostream:556:5: note: resolves to this declaration
+    operator<<(basic_ostream<char, _Traits>& __out, const char* __s)
+    ^
+/home/jiang/code/code_security/test_breakpad.cpp:43:18: warning: 'operator>>' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+        std::cin >> funcNum;
+                 ^
+/usr/lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/istream:179:7: note: resolves to this declaration
+      operator>>(int& __n);
+      ^
+/home/jiang/code/code_security/test_breakpad.cpp:48:13: warning: 'use_nullptr' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+            use_nullptr();
+            ^
+/home/jiang/code/code_security/func.hpp:18:6: note: resolves to this declaration
+void use_nullptr();
+     ^
+/home/jiang/code/code_security/test_breakpad.cpp:51:13: warning: 'access_system_memory' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+            access_system_memory();
+            ^
+/home/jiang/code/code_security/func.hpp:21:6: note: resolves to this declaration
+void access_system_memory();
+     ^
+/home/jiang/code/code_security/test_breakpad.cpp:54:13: warning: 'access_readonly_memory' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+            access_readonly_memory();
+            ^
+/home/jiang/code/code_security/func.hpp:24:6: note: resolves to this declaration
+void access_readonly_memory();
+     ^
+/home/jiang/code/code_security/test_breakpad.cpp:57:13: warning: 'stack_overflow' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+            stack_overflow();
+            ^
+/home/jiang/code/code_security/func.hpp:27:6: note: resolves to this declaration
+void stack_overflow();
+     ^
+/home/jiang/code/code_security/test_breakpad.cpp:60:13: warning: 'use_freed_memory' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+            use_freed_memory();
+            ^
+/home/jiang/code/code_security/func.hpp:30:6: note: resolves to this declaration
+void use_freed_memory();
+     ^
+/home/jiang/code/code_security/test_breakpad.cpp:63:13: warning: 'memory_out_of_bounds' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+            memory_out_of_bounds();
+            ^
+/home/jiang/code/code_security/func.hpp:33:6: note: resolves to this declaration
+void memory_out_of_bounds();
+     ^
+[ 66%] Building CXX object CMakeFiles/test_clang_tidy.dir/func.cpp.o
+/home/jiang/code/code_security/func.cpp:6:1: warning: #includes are not sorted properly [llvm-include-order]
+#include <cstring>
+^
+note: this fix will not be applied because it overlaps with another fix
+/home/jiang/code/code_security/func.cpp:6:1: warning: system include cstring not allowed [llvmlibc-restrict-system-libc-headers]
+#include <cstring>
+^~~~~~~~~~~~~~~~~~
+/home/jiang/code/code_security/func.cpp:7:1: warning: system include cstdlib not allowed [llvmlibc-restrict-system-libc-headers]
+#include <cstdlib>
+^~~~~~~~~~~~~~~~~~
+/home/jiang/code/code_security/func.cpp:8:1: warning: system include cstdio not allowed [llvmlibc-restrict-system-libc-headers]
+#include <cstdio>
+^~~~~~~~~~~~~~~~~
+/home/jiang/code/code_security/func.cpp:11:6: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+void use_nullptr()
+     ^
+/home/jiang/code/code_security/func.cpp:13:23: warning: C-style casts are discouraged; use static_cast/const_cast/reinterpret_cast [google-readability-casting]
+    volatile int *a = (int *) (nullptr);
+                      ^
+/home/jiang/code/code_security/func.cpp:14:8: warning: Dereference of null pointer (loaded from variable 'a') [clang-analyzer-core.NullDereference]
+    *a = 1;
+       ^
+/home/jiang/code/code_security/func.cpp:13:5: note: 'a' initialized to a null pointer value
+    volatile int *a = (int *) (nullptr);
+    ^
+/home/jiang/code/code_security/func.cpp:14:8: note: Dereference of null pointer (loaded from variable 'a')
+    *a = 1;
+       ^
+/home/jiang/code/code_security/func.cpp:18:6: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+void access_system_memory()
+     ^
+/home/jiang/code/code_security/func.cpp:20:14: warning: do not use C-style cast to convert between unrelated types [cppcoreguidelines-pro-type-cstyle-cast]
+    int *a = (int *)1000;
+             ^
+/home/jiang/code/code_security/func.cpp:20:14: warning: C-style casts are discouraged; use static_cast/const_cast/reinterpret_cast [google-readability-casting]
+/home/jiang/code/code_security/func.cpp:20:21: warning: 1000 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+    int *a = (int *)1000;
+                    ^
+/home/jiang/code/code_security/func.cpp:21:10: warning: 10 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+    *a = 10;
+         ^
+/home/jiang/code/code_security/func.cpp:25:6: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+void access_readonly_memory()
+     ^
+/home/jiang/code/code_security/func.cpp:27:5: warning: do not declare variables of type va_list; use variadic templates instead [cppcoreguidelines-pro-type-vararg,hicpp-vararg]
+    char *ptr = "test";
+    ^
+/home/jiang/code/code_security/func.cpp:27:17: warning: ISO C++11 does not allow conversion from string literal to 'char *' [clang-diagnostic-writable-strings]
+    char *ptr = "test";
+                ^
+/home/jiang/code/code_security/func.cpp:28:5: warning: Call to function 'strcpy' is insecure as it does not provide bounding of the memory buffer. Replace unbounded copy functions with analogous functions that support length arguments such as 'strlcpy'. CWE-119 [clang-analyzer-security.insecureAPI.strcpy]
+    strcpy(ptr, "TEST");
+    ^
+/home/jiang/code/code_security/func.cpp:28:5: note: Call to function 'strcpy' is insecure as it does not provide bounding of the memory buffer. Replace unbounded copy functions with analogous functions that support length arguments such as 'strlcpy'. CWE-119
+/home/jiang/code/code_security/func.cpp:32:6: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+void stack_overflow()
+     ^
+/home/jiang/code/code_security/func.cpp:32:6: warning: function 'stack_overflow' is within a recursive call chain [misc-no-recursion]
+/home/jiang/code/code_security/func.cpp:32:6: note: example recursive call chain, starting from function 'stack_overflow'
+/home/jiang/code/code_security/func.cpp:34:5: note: Frame #1: function 'stack_overflow' calls function 'stack_overflow' here:
+    stack_overflow();
+    ^
+/home/jiang/code/code_security/func.cpp:34:5: note: ... which was the starting point of the recursive call chain; there may be other cycles
+/home/jiang/code/code_security/func.cpp:33:1: warning: all paths through this function will call itself [clang-diagnostic-infinite-recursion]
+{
+^
+/home/jiang/code/code_security/func.cpp:34:5: warning: 'stack_overflow' must resolve to a function declared within the '__llvm_libc' namespace [llvmlibc-callee-namespace]
+    stack_overflow();
+    ^
+/home/jiang/code/code_security/func.cpp:32:6: note: resolves to this declaration
+void stack_overflow()
+     ^
+/home/jiang/code/code_security/func.cpp:38:6: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+void use_freed_memory()
+     ^
+/home/jiang/code/code_security/func.cpp:40:5: warning: initializing non-owner 'char *' with a newly created 'gsl::owner<>' [cppcoreguidelines-owning-memory]
+    char* str=(char* )malloc(100);
+    ^
+/home/jiang/code/code_security/func.cpp:40:5: warning: do not declare variables of type va_list; use variadic templates instead [cppcoreguidelines-pro-type-vararg,hicpp-vararg]
+/home/jiang/code/code_security/func.cpp:40:15: warning: do not use C-style cast to convert between unrelated types [cppcoreguidelines-pro-type-cstyle-cast]
+    char* str=(char* )malloc(100);
+              ^
+/home/jiang/code/code_security/func.cpp:40:15: warning: C-style casts are discouraged; use static_cast [google-readability-casting]
+    char* str=(char* )malloc(100);
+              ^~~~~~~~
+              static_cast<char*>()
+/home/jiang/code/code_security/func.cpp:40:23: warning: do not manage memory manually; consider a container or a smart pointer [cppcoreguidelines-no-malloc,hicpp-no-malloc]
+    char* str=(char* )malloc(100);
+                      ^
+/home/jiang/code/code_security/func.cpp:40:30: warning: 100 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+    char* str=(char* )malloc(100);
+                             ^
+/home/jiang/code/code_security/func.cpp:41:9: warning: implicit conversion 'char *' -> bool [readability-implicit-bool-conversion]
+    if(!str)
+       ~^
+            == nullptr
+/home/jiang/code/code_security/func.cpp:45:5: warning: Call to function 'strcpy' is insecure as it does not provide bounding of the memory buffer. Replace unbounded copy functions with analogous functions that support length arguments such as 'strlcpy'. CWE-119 [clang-analyzer-security.insecureAPI.strcpy]
+    strcpy(str,"hello");
+    ^
+/home/jiang/code/code_security/func.cpp:45:5: note: Call to function 'strcpy' is insecure as it does not provide bounding of the memory buffer. Replace unbounded copy functions with analogous functions that support length arguments such as 'strlcpy'. CWE-119
+/home/jiang/code/code_security/func.cpp:46:5: warning: do not call c-style vararg functions [cppcoreguidelines-pro-type-vararg,hicpp-vararg]
+    printf("%s\n",str);
+    ^
+/home/jiang/code/code_security/func.cpp:47:5: warning: do not manage memory manually; use RAII [cppcoreguidelines-no-malloc,hicpp-no-malloc]
+    free(str);
+    ^
+/home/jiang/code/code_security/func.cpp:47:5: warning: calling legacy resource function without passing a 'gsl::owner<>' [cppcoreguidelines-owning-memory]
+/home/jiang/code/code_security/func.cpp:48:5: warning: Call to function 'strcpy' is insecure as it does not provide bounding of the memory buffer. Replace unbounded copy functions with analogous functions that support length arguments such as 'strlcpy'. CWE-119 [clang-analyzer-security.insecureAPI.strcpy]
+    strcpy(str,"abcdef");
+    ^
+/home/jiang/code/code_security/func.cpp:48:5: note: Call to function 'strcpy' is insecure as it does not provide bounding of the memory buffer. Replace unbounded copy functions with analogous functions that support length arguments such as 'strlcpy'. CWE-119
+/home/jiang/code/code_security/func.cpp:48:5: warning: Use of memory after it is freed [clang-analyzer-unix.Malloc]
+    strcpy(str,"abcdef");
+    ^
+/home/jiang/code/code_security/func.cpp:40:23: note: Memory is allocated
+    char* str=(char* )malloc(100);
+                      ^
+/home/jiang/code/code_security/func.cpp:41:8: note: Assuming 'str' is non-null
+    if(!str)
+       ^
+/home/jiang/code/code_security/func.cpp:41:5: note: Taking false branch
+    if(!str)
+    ^
+/home/jiang/code/code_security/func.cpp:47:5: note: Memory is released
+    free(str);
+    ^
+/home/jiang/code/code_security/func.cpp:48:5: note: Use of memory after it is freed
+    strcpy(str,"abcdef");
+    ^
+/home/jiang/code/code_security/func.cpp:51:6: warning: declaration must be declared within the '__llvm_libc' namespace [llvmlibc-implementation-in-namespace]
+void memory_out_of_bounds()
+     ^
+/home/jiang/code/code_security/func.cpp:53:5: warning: do not declare C-style arrays, use std::array<> instead [cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays]
+    char a[5];
+    ^
+/home/jiang/code/code_security/func.cpp:53:12: warning: 5 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+    char a[5];
+           ^
+/home/jiang/code/code_security/func.cpp:54:5: warning: 2nd function call argument is an uninitialized value [clang-analyzer-core.CallAndMessage]
+    printf("%c\n", a[100]);
+    ^
+/home/jiang/code/code_security/func.cpp:54:5: note: 2nd function call argument is an uninitialized value
+/home/jiang/code/code_security/func.cpp:54:5: warning: do not call c-style vararg functions [cppcoreguidelines-pro-type-vararg,hicpp-vararg]
+    printf("%c\n", a[100]);
+    ^
+/home/jiang/code/code_security/func.cpp:54:20: warning: array index 100 is past the end of the array (which contains 5 elements) [clang-diagnostic-array-bounds]
+    printf("%c\n", a[100]);
+                   ^
+/home/jiang/code/code_security/func.cpp:53:5: note: array 'a' declared here
+    char a[5];
+    ^
+/home/jiang/code/code_security/func.cpp:54:22: warning: 100 is a magic number; consider replacing it with a named constant [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+    printf("%c\n", a[100]);
+                     ^
+/home/jiang/code/code_security/func.cpp: In function ‘void access_readonly_memory()’:
+/home/jiang/code/code_security/func.cpp:27:17: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char *ptr = "test";
+                 ^~~~~~
+[100%] Linking CXX executable test_clang_tidy
+[100%] Built target test_clang_tidy
+```
+
+</details>
+
+从结果上看报的错误有些多，可以通过配置文件或者参数禁用一些警告
+
 ### cppcheck
 
 <img src="https://tse2-mm.cn.bing.net/th/id/OIP.OT6nfJ39hPhLCFpySCZNwQHaGh?pid=ImgDet&rs=1" width="300"/>
@@ -139,9 +448,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 http://cppcheck.net/manual.pdf
 
+使用cppcheck检测得到的截图
+
+![2021-04-06_13-52](./assets/2021-04-06_13-52.png)
+
+从结果看到cppcheck检测出来的内存问题相对来说比较少，检测能力有限
+
 ### Infer
 
-
+编译太复杂，github release打包不支持GLIBC太老的机器，可以采用docker拉取镜像进行测试，有机会后续更新
 
 ## 内存检测
 
@@ -176,6 +491,76 @@ set_target_properties(test_memory_asan PROPERTIES
 
 该功能在很多小内存分配的情况下效率很低，由于对于每块内存信息都要分配额外的空间进行记录，分配小内存越多开销越大
 
+编译代码中的`test_memory_asan`目标，执行，可以得到如下输出
+
+<details>
+  <summary>结果</summary>
+
+```
+=================================================================
+==28101==ERROR: AddressSanitizer: global-buffer-overflow on address 0x55a7f351b027 at pc 0x55a7f345ee03 bp 0x7ffcbcf1bb70 sp 0x7ffcbcf1b318
+READ of size 30 at 0x55a7f351b027 thread T0
+    #0 0x55a7f345ee02 in __interceptor_memcpy.part.234 (/home/jiang/code/code_security/build/test_memory_asan+0x60e02)
+    #1 0x55a7f3504a1f in func() /home/jiang/code/code_security/test_memory.cpp:50
+    #2 0x55a7f3504ba2 in main /home/jiang/code/code_security/test_memory.cpp:65
+    #3 0x7f69b8f50bf6 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x21bf6)
+    #4 0x55a7f3406419 in _start (/home/jiang/code/code_security/build/test_memory_asan+0x8419)
+
+0x55a7f351b027 is located 0 bytes to the right of global variable '*.LC0' defined in '/home/jiang/code/code_security/test_memory.cpp' (0x55a7f351b020) of size 7
+  '*.LC0' is ascii string 'dddddd'
+0x55a7f351b027 is located 57 bytes to the left of global variable '*.LC1' defined in '/home/jiang/code/code_security/test_memory.cpp' (0x55a7f351b060) of size 2
+  '*.LC1' is ascii string ' '
+SUMMARY: AddressSanitizer: global-buffer-overflow (/home/jiang/code/code_security/build/test_memory_asan+0x60e02) in __interceptor_memcpy.part.234
+Shadow bytes around the buggy address:
+  0x0ab57e69b5b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ab57e69b5c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ab57e69b5d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ab57e69b5e0: 00 00 00 00 00 00 00 00 00 00 00 00 01 f9 f9 f9
+  0x0ab57e69b5f0: f9 f9 f9 f9 01 f9 f9 f9 f9 f9 f9 f9 01 f9 f9 f9
+=>0x0ab57e69b600: f9 f9 f9 f9[07]f9 f9 f9 f9 f9 f9 f9 02 f9 f9 f9
+  0x0ab57e69b610: f9 f9 f9 f9 00 01 f9 f9 f9 f9 f9 f9 00 00 00 00
+  0x0ab57e69b620: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ab57e69b630: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ab57e69b640: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ab57e69b650: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==28101==ABORTING
+
+```
+
+</details>
+
+从代码中可以看到
+
+```cpp
+    const int buff_size = 20;
+    auto buff = new char[buff_size];
+    memcpy(buff + 5, "dddddd", 30);
+    for (int i = 0; i < buff_size + 5; ++i) {
+        std::cout << buff[i] << " ";
+    }
+```
+
+在拷贝内存时，常量`dddddd`只占7个字节，多拷贝的字节溢出到了cout那一行的空格字符串了。由于发生了错误后程序中断，后面的内存问题也没有能检测出来，但是测试是能够检测出其他内存问题
+
 ### ThreadSanitizer
 
 llvm用来检测线程数据竞争的工具，官方文档：
@@ -194,28 +579,56 @@ https://clang.llvm.org/docs/ThreadSanitizer.html
 
 由于数据竞争情况不一定会触发，不触发的情况是不会报错的，需要反复测试，
 
-根据给的例子不断运行最后的结果
+编译目标`test_race`，不断运行最后的结果
+
+<details>
+  <summary>结果</summary>
 
 ```
+__has_feature(thread_sanitizer)
+thread num: 1
 ==================
-WARNING: ThreadSanitizer: data race (pid=31946)
-  Write of size 4 at 0x00000111659c by thread T1:
-    #0 Thread1(void*) /home/jiang/code/code_security/test_race.cpp:12:12 (test_race+0x4b5ceb)
+WARNING: ThreadSanitizer: data race (pid=28409)
+  Write of size 4 at 0x0000011185e0 by thread T3:
+    #0 thread_1() /home/jiang/code/code_security/test_race.cpp:21:16 (test_race+0x4b6196)
+    #1 void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/bits/invoke.h:60:14 (test_race+0x4b6eca)
+    #2 std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/bits/invoke.h:95:14 (test_race+0x4b6ddd)
+    #3 decltype(std::__invoke(_S_declval<0ul>())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/thread:234:13 (test_race+0x4b6d85)
+    #4 std::thread::_Invoker<std::tuple<void (*)()> >::operator()() /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/thread:243:11 (test_race+0x4b6d25)
+    #5 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/thread:186:13 (test_race+0x4b6ac9)
+    #6 <null> <null> (libstdc++.so.6+0xbd6de)
 
-  Previous write of size 4 at 0x00000111659c by main thread:
-    #0 main /home/jiang/code/code_security/test_race.cpp:25:12 (test_race+0x4b5d7c)
+  Previous write of size 4 at 0x0000011185e0 by thread T2:
+    #0 thread_1() /home/jiang/code/code_security/test_race.cpp:21:16 (test_race+0x4b6196)
+    #1 void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/bits/invoke.h:60:14 (test_race+0x4b6eca)
+    #2 std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/bits/invoke.h:95:14 (test_race+0x4b6ddd)
+    #3 decltype(std::__invoke(_S_declval<0ul>())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/thread:234:13 (test_race+0x4b6d85)
+    #4 std::thread::_Invoker<std::tuple<void (*)()> >::operator()() /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/thread:243:11 (test_race+0x4b6d25)
+    #5 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() /usr/bin/../lib/gcc/x86_64-linux-gnu/7.5.0/../../../../include/c++/7.5.0/thread:186:13 (test_race+0x4b6ac9)
+    #6 <null> <null> (libstdc++.so.6+0xbd6de)
 
-  Location is global 'Global' of size 4 at 0x00000111659c (test_race+0x00000111659c)
+  Location is global 'thread_num' of size 4 at 0x0000011185e0 (test_race+0x0000011185e0)
 
-  Thread T1 (tid=31948, running) created by main thread at:
-    #0 pthread_create <null> (test_race+0x42497b)
-    #1 main /home/jiang/code/code_security/test_race.cpp:24:5 (test_race+0x4b5d72)
+  Thread T3 (tid=28413, running) created by main thread at:
+    #0 pthread_create <null> (test_race+0x424ddb)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xbd994)
+    #2 main /home/jiang/code/code_security/test_race.cpp:38:17 (test_race+0x4b62c2)
 
-SUMMARY: ThreadSanitizer: data race /home/jiang/code/code_security/test_race.cpp:12:12 in Thread1(void*)
+  Thread T2 (tid=28412, finished) created by main thread at:
+    #0 pthread_create <null> (test_race+0x424ddb)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xbd994)
+    #2 main /home/jiang/code/code_security/test_race.cpp:37:17 (test_race+0x4b62af)
+
+SUMMARY: ThreadSanitizer: data race /home/jiang/code/code_security/test_race.cpp:21:16 in thread_1()
 ==================
+thread num: 2
+thread num: 3
 ThreadSanitizer: reported 1 warnings
-
 ```
+
+</details>
+
+可以看到数据竞争被检测出来了，但是代码中对全局变量Global的竞争很难检测出来，因为相对于后面三个线程，前面两个线程运行的时间很快，基本上不会出现未定义情况，但是也会出现竞争的情况，用ThreadSanitizer很难检测到，需要用Helgrind
 
 ### MemorySanitizer
 
@@ -226,6 +639,9 @@ https://clang.llvm.org/docs/MemorySanitizer.html
 和ThreadSanitizer一样链接的时候需要用clang才能支持
 
 在main函数中调用未初始化的值，编译运行得到
+
+<details>
+  <summary>结果</summary>
 
 ```
 ==1733==WARNING: MemorySanitizer: use-of-uninitialized-value
@@ -240,6 +656,8 @@ SUMMARY: MemorySanitizer: use-of-uninitialized-value /home/jiang/code/code_secur
 Exiting
 
 ```
+
+</details>
 
 ### UndefinedBehaviorSanitizer
 
@@ -307,6 +725,48 @@ object-size: An attempt to potentially use bytes which the optimizer can determi
 支持打印堆栈跟踪和符号
 
 支持把日志写到文件或打印
+
+编译代码中目标`test_undefine_behavior`，运行，可以得到结果
+
+<details>
+  <summary>结果</summary>
+
+```
+/home/jiang/code/code_security/test_undefine_behavior.cpp:39:34: runtime error: load of misaligned address 0x7fff0fe28e81 for type 'int', which requires 4 byte alignment
+0x7fff0fe28e81: note: pointer points here
+ 7f 00 00  00 00 00 00 01 00 00 00  02 00 00 00 03 00 00 00  04 00 00 00 00 00 00 00  40 34 40 00 00
+              ^ 
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:39:34 in 
+unaligned data 16777216
+/home/jiang/code/code_security/test_undefine_behavior.cpp:48:32: runtime error: index 5 out of bounds for type 'int [5]'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:48:32 in 
+array1[5] is 0
+/home/jiang/code/code_security/test_undefine_behavior.cpp:52:29: runtime error: load of value 5, which is not a valid value for type 'pets'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:52:29 in 
+my pet is 5
+overflow float 2.14748e+09
+/home/jiang/code/code_security/test_undefine_behavior.cpp:60:5: runtime error: call to function func() through pointer to incorrect function type 'void (*)(int)'
+/home/jiang/code/code_security/test_undefine_behavior.cpp:26: note: func() defined here
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:60:5 in 
+non-parameter function
+/home/jiang/code/code_security/test_undefine_behavior.cpp:64:25: runtime error: implicit conversion from type 'int' of value 2147483642 (32-bit, signed) to type 'short' changed the value to -6 (16-bit, signed)
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:64:25 in 
+/home/jiang/code/code_security/test_undefine_behavior.cpp:66:35: runtime error: implicit conversion from type 'unsigned int' of value 4294967290 (32-bit, unsigned) to type 'unsigned short' changed the value to 65530 (16-bit, unsigned)
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:66:35 in 
+short -6 unsiged short 65530
+/home/jiang/code/code_security/test_undefine_behavior.cpp:71:17: runtime error: reference binding to null pointer of type 'int'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:71:17 in 
+/home/jiang/code/code_security/test_undefine_behavior.cpp:74:13: runtime error: subtraction of unsigned offset from 0x7fff0fe28e60 overflowed to 0x7fff0fe28e64
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:74:13 in 
+overflow pointer0x7fff0fe28e64
+forget return
+/home/jiang/code/code_security/test_undefine_behavior.cpp:30:5: runtime error: execution reached the end of a value-returning function without returning a value
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /home/jiang/code/code_security/test_undefine_behavior.cpp:30:5 in 
+```
+
+</details>
+
+部分错误尤其是算数运算部分的溢出能够通过UndefinedBehaviorSanitizer检测出来，对测试运算多的算法程序是很有用的
 
 ### DataFlowSanitizer
 
@@ -402,6 +862,143 @@ memcheck使用到达时候需要编译器尽可能的降低优化等级，最好
 valgrind --tool=memcheck ./test_memory_none
 ```
 
+valgrind默认工具是memcheck，所以`--tool=memcheck`可以省略，变为
+
+```bash
+valgrind ./test_memory_none
+```
+
+得到分析结果：
+
+<details>
+  <summary>结果</summary>
+
+```
+==608== Memcheck, a memory error detector
+==608== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==608== Using Valgrind-3.16.1 and LibVEX; rerun with -h for copyright info
+==608== Command: ./test_memory_none
+==608== 
+==608== Invalid write of size 1
+==608==    at 0x4C393BB: memmove (vg_replace_strmem.c:1270)
+==608==    by 0x108C25: func() (test_memory.cpp:50)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608==  Address 0x5b80c94 is 0 bytes after a block of size 20 alloc'd
+==608==    at 0x4C32C17: operator new[](unsigned long) (vg_replace_malloc.c:431)
+==608==    by 0x108C05: func() (test_memory.cpp:49)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608== 
+==608== Conditional jump or move depends on uninitialised value(s)
+==608==    at 0x546D42A: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:797)
+==608==    by 0x546E563: _IO_default_xsputn (genops.c:417)
+==608==    by 0x546BB02: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1287)
+==608==    by 0x545FA56: fwrite (iofwrite.c:39)
+==608==    by 0x4F52B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F52E27: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108C56: func() (test_memory.cpp:52)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608== 
+==608== Conditional jump or move depends on uninitialised value(s)
+==608==    at 0x546BB35: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1241)
+==608==    by 0x545FA56: fwrite (iofwrite.c:39)
+==608==    by 0x4F52B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F52E27: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108C56: func() (test_memory.cpp:52)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608== 
+==608== Invalid read of size 1
+==608==    at 0x108C40: func() (test_memory.cpp:52)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608==  Address 0x5b80c94 is 0 bytes after a block of size 20 alloc'd
+==608==    at 0x4C32C17: operator new[](unsigned long) (vg_replace_malloc.c:431)
+==608==    by 0x108C05: func() (test_memory.cpp:49)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608== 
+==608== Syscall param write(buf) points to uninitialised byte(s)
+==608==    at 0x54F0224: write (write.c:27)
+==608==    by 0x546B28C: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1203)
+==608==    by 0x546D020: new_do_write (fileops.c:457)
+==608==    by 0x546D020: _IO_do_write@@GLIBC_2.2.5 (fileops.c:433)
+==608==    by 0x546D4D2: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:798)
+==608==    by 0x4F52689: std::ostream::put(char) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F5288E: std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108C84: func() (test_memory.cpp:54)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608==  Address 0x5b80ce0 is 0 bytes inside a block of size 1,024 alloc'd
+==608==    at 0x4C31ECB: malloc (vg_replace_malloc.c:307)
+==608==    by 0x545E26B: _IO_file_doallocate (filedoalloc.c:101)
+==608==    by 0x546E448: _IO_doallocbuf (genops.c:365)
+==608==    by 0x546D567: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:759)
+==608==    by 0x546BABC: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1266)
+==608==    by 0x545FA56: fwrite (iofwrite.c:39)
+==608==    by 0x4F52B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F52E27: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108C56: func() (test_memory.cpp:52)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608== 
+     d d d d d d     f i n i s h e d    
+==608== Invalid write of size 1
+==608==    at 0x108CA0: func() (test_memory.cpp:56)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608==  Address 0x5b80c81 is 1 bytes inside a block of size 20 free'd
+==608==    at 0x4C33BE6: operator delete[](void*) (vg_replace_malloc.c:649)
+==608==    by 0x108C97: func() (test_memory.cpp:55)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608==  Block was alloc'd at
+==608==    at 0x4C32C17: operator new[](unsigned long) (vg_replace_malloc.c:431)
+==608==    by 0x108C05: func() (test_memory.cpp:49)
+==608==    by 0x108D37: main (test_memory.cpp:65)
+==608== 
+==608== Conditional jump or move depends on uninitialised value(s)
+==608==    at 0x108D3C: main (test_memory.cpp:67)
+==608== 
+==608== Conditional jump or move depends on uninitialised value(s)
+==608==    at 0x4F46B2A: std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F53074: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108D51: main (test_memory.cpp:68)
+==608== 
+==608== Use of uninitialised value of size 8
+==608==    at 0x4F4662E: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F46B53: std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F53074: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108D51: main (test_memory.cpp:68)
+==608== 
+==608== Conditional jump or move depends on uninitialised value(s)
+==608==    at 0x4F4663B: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F46B53: std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F53074: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108D51: main (test_memory.cpp:68)
+==608== 
+==608== Conditional jump or move depends on uninitialised value(s)
+==608==    at 0x4F46B86: std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x4F53074: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==608==    by 0x108D51: main (test_memory.cpp:68)
+==608== 
+0
+finished
+==608== 
+==608== HEAP SUMMARY:
+==608==     in use at exit: 400 bytes in 2 blocks
+==608==   total heap usage: 7 allocs, 5 frees, 74,164 bytes allocated
+==608== 
+==608== LEAK SUMMARY:
+==608==    definitely lost: 400 bytes in 2 blocks
+==608==    indirectly lost: 0 bytes in 0 blocks
+==608==      possibly lost: 0 bytes in 0 blocks
+==608==    still reachable: 0 bytes in 0 blocks
+==608==         suppressed: 0 bytes in 0 blocks
+==608== Rerun with --leak-check=full to see details of leaked memory
+==608== 
+==608== Use --track-origins=yes to see where uninitialised values come from
+==608== For lists of detected and suppressed errors, rerun with: -s
+==608== ERROR SUMMARY: 32 errors from 11 contexts (suppressed: 0 from 0)
+
+```
+
+</details>
+
+基本上出现的问题都检测到了
+
 使用xtree 查看内存分配数量统计
 
 ```bash
@@ -455,6 +1052,376 @@ https://www.valgrind.org/docs/manual/cl-manual.html
 - 锁顺序不一致
 - 数据竞争
 
+使用Helgrind检测ThreadSanitizer检测的程序，编译目标`test_race_none`，然后运行
+
+```bash
+valgrind --tool=helgrind ./test_race_none
+```
+
+得到结果：
+
+<details>
+  <summary>结果</summary>
+
+```
+==858== Helgrind, a thread error detector
+==858== Copyright (C) 2007-2017, and GNU GPL'd, by OpenWorks LLP et al.
+==858== Using Valgrind-3.16.1 and LibVEX; rerun with -h for copyright info
+==858== Command: ./test_race_none
+==858== 
+==858== ---Thread-Announcement------------------------------------------
+==858== 
+==858== Thread #1 is the program's root thread
+==858== 
+==858== ---Thread-Announcement------------------------------------------
+==858== 
+==858== Thread #2 was created
+==858==    at 0x572670E: clone (clone.S:71)
+==858==    by 0x4E4CEC4: create_thread (createthread.c:100)
+==858==    by 0x4E4CEC4: pthread_create@@GLIBC_2.2.5 (pthread_create.c:797)
+==858==    by 0x4C38E83: pthread_create_WRK (hg_intercepts.c:425)
+==858==    by 0x4C39F75: pthread_create@* (hg_intercepts.c:458)
+==858==    by 0x108FAA: main (test_race.cpp:33)
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during write of size 8 at 0x30B020 by thread #1
+==858== Locks held: none
+==858==    at 0x108FB2: main (test_race.cpp:34)
+==858== 
+==858== This conflicts with a previous write of size 8 by thread #2
+==858== Locks held: none
+==858==    at 0x108F10: Thread1(void*) (test_race.cpp:13)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858==  Address 0x30b020 is 0 bytes inside data symbol "Global"
+==858== 
+thread num: 1
+==858== ---Thread-Announcement------------------------------------------
+==858== 
+==858== Thread #4 was created
+==858==    at 0x572670E: clone (clone.S:71)
+==858==    by 0x4E4CEC4: create_thread (createthread.c:100)
+==858==    by 0x4E4CEC4: pthread_create@@GLIBC_2.2.5 (pthread_create.c:797)
+==858==    by 0x4C38E83: pthread_create_WRK (hg_intercepts.c:425)
+==858==    by 0x4C39F75: pthread_create@* (hg_intercepts.c:458)
+==858==    by 0x5121994: std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x1092B2: std::thread::thread<void (&)()>(void (&)()) (thread:126)
+==858==    by 0x108FF5: main (test_race.cpp:38)
+==858== 
+==858== ---Thread-Announcement------------------------------------------
+==858== 
+==858== Thread #3 was created
+==858==    at 0x572670E: clone (clone.S:71)
+==858==    by 0x4E4CEC4: create_thread (createthread.c:100)
+==858==    by 0x4E4CEC4: pthread_create@@GLIBC_2.2.5 (pthread_create.c:797)
+==858==    by 0x4C38E83: pthread_create_WRK (hg_intercepts.c:425)
+==858==    by 0x4C39F75: pthread_create@* (hg_intercepts.c:458)
+==858==    by 0x5121994: std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x1092B2: std::thread::thread<void (&)()>(void (&)()) (thread:126)
+==858==    by 0x108FDF: main (test_race.cpp:37)
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during read of size 4 at 0x30B028 by thread #4
+==858== Locks held: none
+==858==    at 0x108F24: thread_1() (test_race.cpp:21)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 4 by thread #3
+==858== Locks held: none
+==858==    at 0x108F30: thread_1() (test_race.cpp:21)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==  Address 0x30b028 is 0 bytes inside data symbol "thread_num"
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during write of size 4 at 0x30B028 by thread #4
+==858== Locks held: none
+==858==    at 0x108F30: thread_1() (test_race.cpp:21)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 4 by thread #3
+==858== Locks held: none
+==858==    at 0x108F30: thread_1() (test_race.cpp:21)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==  Address 0x30b028 is 0 bytes inside data symbol "thread_num"
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during read of size 8 at 0x53E9E78 by thread #4
+==858== Locks held: none
+==858==    at 0x5177A8E: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 8 by thread #3
+==858== Locks held: none
+==858==    at 0x5177B3A: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==  Address 0x53e9e78 is 24 bytes inside data symbol "_ZSt4cout"
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during write of size 1 at 0x5DA5E3B by thread #4
+==858== Locks held: none
+==858==    at 0x4C3E50B: mempcpy (vg_replace_strmem.c:1536)
+==858==    by 0x5690A63: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1258)
+==858==    by 0x5684A56: fwrite (iofwrite.c:39)
+==858==    by 0x5177B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==  Address 0x5da5e3b is 11 bytes inside a block of size 1,024 alloc'd
+==858==    at 0x4C3326B: malloc (vg_replace_malloc.c:307)
+==858==    by 0x568326B: _IO_file_doallocate (filedoalloc.c:101)
+==858==    by 0x5693448: _IO_doallocbuf (genops.c:365)
+==858==    by 0x5692567: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:759)
+==858==    by 0x5690ABC: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1266)
+==858==    by 0x5684A56: fwrite (iofwrite.c:39)
+==858==    by 0x5177B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==  Block was alloc'd by thread #3
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during write of size 8 at 0x53E9E78 by thread #4
+==858== Locks held: none
+==858==    at 0x5177B3A: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 8 by thread #3
+==858== Locks held: none
+==858==    at 0x5177B3A: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==  Address 0x53e9e78 is 24 bytes inside data symbol "_ZSt4cout"
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during read of size 1 at 0x53E9F49 by thread #4
+==858== Locks held: none
+==858==    at 0x5178042: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 1 by thread #3
+==858== Locks held: none
+==858==    at 0x51780E4: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==  Address 0x53e9f49 is 233 bytes inside data symbol "_ZSt4cout"
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during read of size 1 at 0x53E9F48 by thread #4
+==858== Locks held: none
+==858==    at 0x517804B: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 1 by thread #3
+==858== Locks held: none
+==858==    at 0x51780DB: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==  Address 0x53e9f48 is 232 bytes inside data symbol "_ZSt4cout"
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during write of size 1 at 0x5DA5E3C by thread #4
+==858== Locks held: none
+==858==    at 0x4C3E52C: mempcpy (vg_replace_strmem.c:1536)
+==858==    by 0x5690A63: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1258)
+==858==    by 0x5684A56: fwrite (iofwrite.c:39)
+==858==    by 0x516BBC1: std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5178074: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==  Address 0x5da5e3c is 12 bytes inside a block of size 1,024 alloc'd
+==858==    at 0x4C3326B: malloc (vg_replace_malloc.c:307)
+==858==    by 0x568326B: _IO_file_doallocate (filedoalloc.c:101)
+==858==    by 0x5693448: _IO_doallocbuf (genops.c:365)
+==858==    by 0x5692567: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:759)
+==858==    by 0x5690ABC: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1266)
+==858==    by 0x5684A56: fwrite (iofwrite.c:39)
+==858==    by 0x5177B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5177EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F47: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==  Block was alloc'd by thread #3
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during read of size 1 at 0x53EB0F8 by thread #4
+==858== Locks held: none
+==858==    at 0x517787A: std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F72: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 1 by thread #3
+==858== Locks held: none
+==858==    at 0x511CF58: std::ctype<char>::_M_widen_init() const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5178107: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==  Address 0x53eb0f8 is in the BSS segment of /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25
+==858== 
+==858== ----------------------------------------------------------------
+==858== 
+==858== Possible data race during read of size 1 at 0x53EB103 by thread #4
+==858== Locks held: none
+==858==    at 0x5177883: std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F72: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==    by 0x51216DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x4C39077: mythread_wrapper (hg_intercepts.c:387)
+==858==    by 0x4E4C6DA: start_thread (pthread_create.c:463)
+==858==    by 0x572671E: clone (clone.S:95)
+==858== 
+==858== This conflicts with a previous write of size 2 by thread #3
+==858== Locks held: none
+==858==    at 0x511CEA3: std::ctype<char>::_M_widen_init() const (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x5178107: std::ostream& std::ostream::_M_insert<long>(long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==858==    by 0x108F5D: thread_1() (test_race.cpp:22)
+==858==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==858==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==858==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==858==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==858==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==858==  Address 0x53eb103 is in the BSS segment of /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25
+==858== 
+thread num: 2
+thread num: 3
+==858== 
+==858== Use --history-level=approx or =none to gain increased speed, at
+==858== the cost of reduced accuracy of conflicting-access information
+==858== For lists of detected and suppressed errors, rerun with: -s
+==858== ERROR SUMMARY: 43 errors from 11 contexts (suppressed: 64 from 35)
+
+```
+
+</details>
+
+相比ThreadSanitizer，前面两个线程中的竞争可能性也检测出来了
+
 #### DRD
 
 DRD也是Valgrind里面的检测线程错误的一个工具
@@ -483,7 +1450,156 @@ DRD也是Valgrind里面的检测线程错误的一个工具
 - 死锁
 - 虚假共享，两个线程在不同核心运行，在同一块缓存频繁获取不同的变量，频繁交换高速缓存行会导致线程性能下降
 
-使用方法设置`--tool=drd`就可以了
+使用方法设置`--tool=drd`就可以了，同样测试得到结果
+
+<details>
+  <summary>结果</summary>
+
+```
+❯ valgrind --tool=drd ./test_race_none
+==1572== drd, a thread error detector
+==1572== Copyright (C) 2006-2017, and GNU GPL'd, by Bart Van Assche.
+==1572== Using Valgrind-3.16.1 and LibVEX; rerun with -h for copyright info
+==1572== Command: ./test_race_none
+==1572== 
+==1572== Conflicting store by thread 1 at 0x0030b020 size 8
+==1572==    at 0x108FB2: main (test_race.cpp:34)
+==1572== Allocation context: BSS section of /home/jiang/code/code_security/build/test_race_none
+==1572== Other segment start (thread 2)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 2)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+thread num: 1
+==1572== Thread 4:
+==1572== Conflicting load by thread 4 at 0x0030b028 size 4
+==1572==    at 0x108F24: thread_1() (test_race.cpp:21)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==1572==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==1572==    by 0x512F6DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x4C38894: vgDrd_thread_wrapper (drd_pthread_intercepts.c:449)
+==1572==    by 0x4E5A6DA: start_thread (pthread_create.c:463)
+==1572==    by 0x573471E: clone (clone.S:95)
+==1572== Allocation context: BSS section of /home/jiang/code/code_security/build/test_race_none
+==1572== Other segment start (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+==1572== Conflicting store by thread 4 at 0x0030b028 size 4
+==1572==    at 0x108F30: thread_1() (test_race.cpp:21)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==1572==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==1572==    by 0x512F6DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x4C38894: vgDrd_thread_wrapper (drd_pthread_intercepts.c:449)
+==1572==    by 0x4E5A6DA: start_thread (pthread_create.c:463)
+==1572==    by 0x573471E: clone (clone.S:95)
+==1572== Allocation context: BSS section of /home/jiang/code/code_security/build/test_race_none
+==1572== Other segment start (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+==1572== Conflicting store by thread 4 at 0x05db3e1b size 1
+==1572==    at 0x4C4B8B6: mempcpy (vg_replace_strmem.c:1536)
+==1572==    by 0x569EA63: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1258)
+==1572==    by 0x5692A56: fwrite (iofwrite.c:39)
+==1572==    by 0x5185B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x5185EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x108F47: thread_1() (test_race.cpp:22)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==1572==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==1572==    by 0x512F6DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572== Address 0x5db3e1b is at offset 11 from 0x5db3e10. Allocation context:
+==1572==    at 0x4C3535B: malloc (vg_replace_malloc.c:307)
+==1572==    by 0x569126B: _IO_file_doallocate (filedoalloc.c:101)
+==1572==    by 0x56A1448: _IO_doallocbuf (genops.c:365)
+==1572==    by 0x56A0567: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:759)
+==1572==    by 0x569EABC: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1266)
+==1572==    by 0x5692A56: fwrite (iofwrite.c:39)
+==1572==    by 0x5185B83: std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x5185EF6: std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x108F47: thread_1() (test_race.cpp:22)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572== Other segment start (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+==1572== Conflicting load by thread 4 at 0x0030b028 size 4
+==1572==    at 0x108F52: thread_1() (test_race.cpp:22)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==1572==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==1572==    by 0x512F6DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x4C38894: vgDrd_thread_wrapper (drd_pthread_intercepts.c:449)
+==1572==    by 0x4E5A6DA: start_thread (pthread_create.c:463)
+==1572==    by 0x573471E: clone (clone.S:95)
+==1572== Allocation context: BSS section of /home/jiang/code/code_security/build/test_race_none
+==1572== Other segment start (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+==1572== Conflicting load by thread 4 at 0x053f90f8 size 1
+==1572==    at 0x518587A: std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x108F72: thread_1() (test_race.cpp:22)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==1572==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==1572==    by 0x512F6DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x4C38894: vgDrd_thread_wrapper (drd_pthread_intercepts.c:449)
+==1572==    by 0x4E5A6DA: start_thread (pthread_create.c:463)
+==1572==    by 0x573471E: clone (clone.S:95)
+==1572== Allocation context: BSS section of /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25
+==1572== Other segment start (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+==1572== Conflicting load by thread 4 at 0x053f9103 size 1
+==1572==    at 0x5185883: std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x108F72: thread_1() (test_race.cpp:22)
+==1572==    by 0x109406: void std::__invoke_impl<void, void (*)()>(std::__invoke_other, void (*&&)()) (invoke.h:60)
+==1572==    by 0x109213: std::__invoke_result<void (*)()>::type std::__invoke<void (*)()>(void (*&&)()) (invoke.h:95)
+==1572==    by 0x1098E7: decltype (__invoke((_S_declval<0ul>)())) std::thread::_Invoker<std::tuple<void (*)()> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (thread:234)
+==1572==    by 0x1098A3: std::thread::_Invoker<std::tuple<void (*)()> >::operator()() (thread:243)
+==1572==    by 0x109873: std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)()> > >::_M_run() (thread:186)
+==1572==    by 0x512F6DE: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25)
+==1572==    by 0x4C38894: vgDrd_thread_wrapper (drd_pthread_intercepts.c:449)
+==1572==    by 0x4E5A6DA: start_thread (pthread_create.c:463)
+==1572==    by 0x573471E: clone (clone.S:95)
+==1572== Allocation context: BSS section of /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.25
+==1572== Other segment start (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== Other segment end (thread 3)
+==1572==    (thread finished, call stack no longer available)
+==1572== 
+thread num: 2
+thread num: 3
+==1572== 
+==1572== For lists of detected and suppressed errors, rerun with: -s
+==1572== ERROR SUMMARY: 35 errors from 7 contexts (suppressed: 190 from 97)
+```
+
+同样也能检测出两种竞争情况
+
+</details>
 
 #### Massif
 
@@ -624,6 +1740,10 @@ sudo perf script -i FILE_NAME > OUTPUT
 
 https://github.com/brendangregg/FlameGraph
 
+图样式：
+
+！[flamechart](http://www.brendangregg.com/FlameGraphs/cpu-bash-flamegraph.svg)
+
 ## 栈回溯
 
 主要用来获取当前的调用堆栈信息，当前线程函数调用栈，函数名称逐级信息
@@ -673,15 +1793,30 @@ lcov --rc lcov_branch_coverage=1 -c -d "${BINARY_DIR}" -o "${BINARY_DIR}/${COVER
 genhtml --rc genhtml_branch_coverage=1 "${BINARY_DIR}/${COVERAGE_FILE}" -o ${REPORT_FOLDER}
 ```
 
+编译目标`test_gcov`，然后运行`test_gcov`，然后到代码目录执行
+
+```bash
+./make_cov.sh build #build为cmake构建目录
+```
+
+可以在`coverage_report`目录找到生成的覆盖测试结果报告，打开`index.html`得到如下结果
+
+<details>
+  <summary>结果</summary>
+
+![覆盖测试结果](./assets/2021-04-06_15-28.png)
+
+</details>
+
 ## 崩溃抓取
 
 程序崩溃一般是发生致命性错误，有时候这种问题很难通过调试找到，所以需要在程序崩溃时生成函数调用信息，同时保存部分局部变量用来分析，Windows下面可以用系统自带的`dbghelp.dll`来生成minidump，然后用visual stdio调试，Linux下面可以breakpad库来生成minidump文件
 
 ### breakpad
 
-编译，参考
+编译和使用，参考之前的博客
 
-
+https://helywin.github.io/2019/09/07/breakpad%E5%B4%A9%E6%BA%83%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86/
 
 #### 进程内捕获
 

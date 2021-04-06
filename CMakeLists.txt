@@ -28,12 +28,19 @@ include_directories(${BREAKPAD_CLIENT_INCLUDE_DIRS})
 #set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/output)
 
 # 查找clang-tidy
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-12" DOC "Path to clang-tidy executable")
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-12" "clang-tidy" DOC "Path to clang-tidy executable")
+find_program(CLANG_XX_EXE NAMES "clang++-12" "clang++" DOC "Path to clang++ executable")
 if (NOT CLANG_TIDY_EXE)
-    message(STATUS "clang-tidy not found.")
+    message(FATAL_ERROR "clang-tidy not found.")
 else ()
     message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
     set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks=*,-clang-analyzer-alpha.*")
+endif ()
+
+if (NOT CLANG_XX_EXE)
+    message(FATAL_ERROR "clang++ not found.")
+else ()
+    message(STATUS "clang++ found: ${CLANG_EXE}")
 endif ()
 
 add_executable(test_breakpad test_breakpad.cpp func.cpp func.hpp)
@@ -76,11 +83,15 @@ add_executable(test_race_none test_race.cpp)
 target_link_libraries(test_race_none pthread)
 
 add_custom_target(test_race COMMAND
-        clang-12 -lstdc++ -pthread -fsanitize=thread -g -O0 ${CMAKE_SOURCE_DIR}/test_race.cpp -o ${CMAKE_BINARY_DIR}/test_race
+        ${CLANG_XX_EXE} -lstdc++ -pthread -fsanitize=thread -g -O0 ${CMAKE_SOURCE_DIR}/test_race.cpp -o ${CMAKE_BINARY_DIR}/test_race
         )
 
 add_custom_target(test_memory COMMAND
-        clang-12 -lstdc++ -fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins -fsanitize-memory-use-after-dtor -g -O0 ${CMAKE_SOURCE_DIR}/test_memory.cpp -o ${CMAKE_BINARY_DIR}/test_memory
+        ${CLANG_XX_EXE} -lstdc++ -fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins -fsanitize-memory-use-after-dtor -g -O0 ${CMAKE_SOURCE_DIR}/test_memory.cpp -o ${CMAKE_BINARY_DIR}/test_memory
+        )
+
+add_custom_target(test_undefine_behavior COMMAND
+        ${CLANG_XX_EXE} -lstdc++ -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-recover=undefined -fsanitize=implicit-unsigned-integer-truncation -fsanitize=implicit-signed-integer-truncation -fsanitize=bool -fsanitize=shift -fsanitize=shift-base -fsanitize=shift-exponent -fsanitize=unsigned-shift-base -fsanitize=signed-integer-overflow -ftrapv -g -O0 ${CMAKE_SOURCE_DIR}/test_undefine_behavior.cpp -o ${CMAKE_BINARY_DIR}/test_undefine_behavior
         )
 
 add_executable(test_gperf test_gperf.cpp)

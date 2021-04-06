@@ -6,11 +6,11 @@
 #include <iostream>
 #include <thread>
 
-int Global;
+unsigned long long Global;
 
 void *Thread1(void *x)
 {
-    Global = 42;
+    Global = Global + 0xffddf33dddff3425;
     return x;
 }
 
