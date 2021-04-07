@@ -103,7 +103,7 @@ if (NOT CLANG_TIDY_EXE)
     message(STATUS "clang-tidy not found.")
 else ()
     message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
-    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks=*,-clang-analyzer-alpha.*")
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}" "-checks=*,-clang-analyzer-*")
 endif ()
 
 # 生成目标
@@ -482,7 +482,27 @@ http://cppcheck.net/manual.pdf
 > - Double-free, invalid free
 > - Memory leaks (experimental)
 
-总的来说AddressSanitizer是通过编译时替代链接标准的内存管理库然后对内存分配释放使用进行额外的标记管理来检测内存的错误，会带来额外的开销
+总的来说AddressSanitizer是通过链接库替换标准C/C++内存分配释放库，分配缓存前后的空间标记为poisoned，已经被释放的缓存也被标记为poisoned
+
+替换之前：
+
+```c++
+*address = ...;
+```
+
+替换之后：
+
+```c++
+if (IsPoisoned(address))
+{
+    ReportError(address, kAccessSize, kIsWrite);
+}
+*address = ...;
+```
+
+访问之前检查访问地址是否poisoned，如果是，报告错误。
+
+详细原理：https://github.com/google/sanitizers/wiki/AddressSanitizerAlgorithm
 
 cmake示例代码
 
@@ -1783,7 +1803,7 @@ sudo perf script -i FILE_NAME > OUTPUT
 
 图样式：
 
-![flamechart](http://www.brendangregg.com/FlameGraphs/cpu-bash-flamegraph.svg)
+![flamechart](C:\Users\MSI1\Desktop\cpu-bash-flamegraph.svg)
 
 实际示例：
 
@@ -1983,3 +2003,5 @@ int main(int argc, char *argv[])
 > https://zhuanlan.zhihu.com/p/290689333
 >
 > http://www.brendangregg.com/
+>
+> https://llvm.org/docs/LibFuzzer.html
