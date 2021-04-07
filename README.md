@@ -1916,6 +1916,8 @@ genhtml --rc genhtml_branch_coverage=1 "${BINARY_DIR}/${COVERAGE_FILE}" -o ${REP
 
 ### breakpad
 
+![breakpad_overview](./assets/breakpad-overview.png)
+
 编译和使用，参考之前的博客
 
 https://helywin.github.io/2019/09/07/breakpad%E5%B4%A9%E6%BA%83%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86/

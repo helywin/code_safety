@@ -17,7 +17,7 @@ void use_nullptr()
 // 访问系统保护的内存地址
 void access_system_memory()
 {
-    int *a = (int *)1000;
+    int *a = (int *) 1000;
     *a = 10;
 }
 
@@ -37,15 +37,14 @@ void stack_overflow()
 // 使用free掉的内存
 void use_freed_memory()
 {
-    char* str=(char* )malloc(100);
-    if(!str)
-    {
+    char *str = (char *) malloc(100);
+    if (!str) {
         return;
     }
-    strcpy(str,"hello");
-    printf("%s\n",str);
+    strcpy(str, "hello");
+    printf("%s\n", str);
     free(str);
-    strcpy(str,"abcdef");
+    strcpy(str, "abcdef");
 }
 
 void memory_out_of_bounds()

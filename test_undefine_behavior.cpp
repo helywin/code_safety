@@ -27,7 +27,8 @@ void func()
     std::cout << "non-parameter function" << endl;
 }
 
-int forget_return() {
+int forget_return()
+{
     cout << "forget return" << endl;
 }
 
