@@ -1989,6 +1989,12 @@ int main(int argc, char *argv[])
 可以用minidump-2-core转成coredump文件用gdb调试
 
 也可以用dump_stackwalk分析调用栈，但是需要用dump_syms导出符号文件
+  
+## 栈回溯
+  
+当程序遇到类似段错误的问题，往往需要使用gdb调试捕捉，可以在debug编译的时候使用backward库，当程序崩溃时会打印相关的崩溃位置信息，在开发时非常方便
+  
+地址：https://github.com/bombela/backward-cpp
 
 # 其他链接
 
