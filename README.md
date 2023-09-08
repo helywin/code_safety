@@ -17,14 +17,14 @@ https://en.wikipedia.org/wiki/List_of_tools_for_static_code_analysis#C,_C++
 破解license
 
 ```
-Ru.Board
-UX9G-38X9-1HNH-0B0F
+PVSStudio_sanet.st
+0XZ0-3UPU-29T1-7RGB
 ```
 
 注册license
 
 ```bash
-pvs-studio-analyzer credentials Ru.Board UX9G-38X9-1HNH-0B0F
+pvs-studio-analyzer credentials PVSStudio_sanet.st 0XZ0-3UPU-29T1-7RGB
 ```
 
 示例操作：
@@ -34,6 +34,9 @@ pvs-studio-analyzer credentials Ru.Board UX9G-38X9-1HNH-0B0F
 pvs-studio-analyzer trace -- ./build.sh
 # 使用工具分析源代码
 pvs-studio-analyzer analyze -j4 -o analyse.log
+
+# 如果使用CMake编译，可以打开`CMAKE_EXPORT_COMPILE_COMMANDS`，生成`compile_commands.json`，然后指定
+pvs-studio-analyzer analyze -f xxx/compile_commands.json -j4 -o analyse.log
 # 把分析结果转换成文字报告result.txt
 plog-converter -a GA:1,2 -t tasklist -o result.txt analyse.log
 ```
